@@ -1,0 +1,239 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-header h1 {
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.connection-badge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.connection-badge.online {
+  background: #14532d;
+  color: #86efac;
+}
+.connection-badge.offline {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.loading {
+  opacity: 0.7;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.view-toggle button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.view-toggle button.active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #052e16;
+}
+
+.signal-status {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.signal-status-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.signal-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.signal-chip-green { background: #14532d; color: #86efac; }
+.signal-chip-yellow { background: #713f12; color: #fde68a; }
+.signal-chip-red { background: #7f1d1d; color: #fecaca; }
+
+.signal-time {
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.signal-status-lanes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.signal-lane {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+
+.signal-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.signal-dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.signal-dot-yellow { background: #eab308; box-shadow: 0 0 6px #eab308; }
+.signal-dot-red { background: #ef4444; }
+
+.city-canvas-wrap {
+  background: #0b1220;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  max-height: 640px;
+}
+.city-canvas-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.canvas-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 8px 0 24px;
+}
+
+.metrics-panel {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.metrics-panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #94a3b8;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.metric-card {
+  background: #0f172a;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.metric-values {
+  display: flex;
+  gap: 12px;
+}
+
+.metric-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.metric-value.adaptive .metric-tag { color: #4ade80; }
+.metric-value.fixed .metric-tag { color: #94a3b8; }
+
+.metric-number {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.improvement-banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.improvement-banner.positive {
+  background: #14532d;
+  color: #bbf7d0;
+}
+.improvement-banner.negative {
+  background: #422006;
+  color: #fde68a;
+}
+
+.config-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+@media (max-width: 480px) {
+  .city-canvas-wrap {
+    aspect-ratio: 4 / 5;
+  }
+  .app-header h1 {
+    font-size: 1.3rem;
+  }
+}
