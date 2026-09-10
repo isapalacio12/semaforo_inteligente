@@ -40,10 +40,17 @@ export const VEHICLE_DRIVE_SPEED = 12;
 // Que tan lejos, mas alla de su lugar real en la fila, "aparece" un vehiculo
 // nuevo -- para que se vea llegando manejando en vez de aparecer de la nada.
 export const VEHICLE_SPAWN_EXTRA_DISTANCE = 14;
-// Cuanto sigue avanzando un vehiculo despues de que le toca verde, antes de
-// desaparecer -- lo suficiente para cruzar TODA la interseccion y perderse
-// por el otro lado, no solo asomarse al cruce.
-export const VEHICLE_EXIT_TRAVEL_DISTANCE = 24;
+
+// Punto de destino cuando un vehiculo cruza: casi la punta del brazo OPUESTO
+// (distancia negativa = del otro lado del cruce, en la direccion de viaje).
+// Asi se ve manejando por toda la calle de salida y perdiendose a lo lejos,
+// igual de progresivo que la llegada -no se esfuma cerca del semaforo-.
+export const VEHICLE_EXIT_TARGET_DISTANCE = -(ARM_LENGTH + HALF_INTERSECTION - 6);
+// Cota superior de cuanto puede llegar a recorrer un vehiculo saliendo (desde
+// el frente de la fila hasta el punto de salida), para saber cuanto tiempo
+// real hay que esperar antes de desmontarlo del todo.
+export const VEHICLE_MAX_EXIT_TRAVEL =
+  HALF_INTERSECTION + STOP_LINE_GAP + Math.abs(VEHICLE_EXIT_TARGET_DISTANCE) + 10;
 
 export const LANES = ["N", "S", "E", "O"];
 

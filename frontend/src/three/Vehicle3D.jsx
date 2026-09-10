@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
-  LANE_FACING,
   LANE_ROTATION,
   VEHICLE_DRIVE_SPEED,
-  VEHICLE_EXIT_TRAVEL_DISTANCE,
+  VEHICLE_EXIT_TARGET_DISTANCE,
+  laneOffsetPosition,
   laneVehiclePosition,
   laneVehicleSpawnPosition,
 } from "./laneLayout.js";
@@ -70,8 +70,8 @@ function MotoBody({ id }) {
  *  - Mientras espera, si el de adelante avanza (o sale), lo sigue a la misma
  *    velocidad constante.
  *  - Cuando le toca cruzar (el backend ya no lo manda en la fila = "exiting"),
- *    sigue de largo en su misma direccion una buena distancia -cruza TODO el
- *    cruce y se pierde del otro lado- antes de desmontarse.
+ *    sigue de largo hasta casi la punta del brazo OPUESTO del cruce -recorre
+ *    toda la calle de salida y se pierde a lo lejos- antes de desmontarse.
  */
 export default function Vehicle3D({ id, type, lane, index, exiting }) {
   const groupRef = useRef();
@@ -96,11 +96,7 @@ export default function Vehicle3D({ id, type, lane, index, exiting }) {
 
     if (exiting) {
       if (!exitTargetRef.current) {
-        const facing = LANE_FACING[lane];
-        exitTargetRef.current = {
-          x: node.position.x + facing.x * VEHICLE_EXIT_TRAVEL_DISTANCE,
-          z: node.position.z + facing.z * VEHICLE_EXIT_TRAVEL_DISTANCE,
-        };
+        exitTargetRef.current = laneOffsetPosition(lane, VEHICLE_EXIT_TARGET_DISTANCE);
       }
       targetX = exitTargetRef.current.x;
       targetZ = exitTargetRef.current.z;
