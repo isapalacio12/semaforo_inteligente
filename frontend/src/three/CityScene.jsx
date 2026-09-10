@@ -49,7 +49,7 @@ export default function CityScene({ intersection }) {
   if (!intersection) return null;
 
   return (
-    <Canvas shadows camera={{ position: [0, 24, 32], fov: 48 }}>
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 24, 32], fov: 48 }}>
       <color attach="background" args={["#0b1220"]} />
       <fog attach="fog" args={["#0b1220", 55, 150]} />
       <ambientLight intensity={0.6} />

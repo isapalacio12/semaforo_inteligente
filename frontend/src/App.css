@@ -2,17 +2,23 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  overflow-x: hidden;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   background: #0f172a;
   color: #e2e8f0;
 }
 
 .app {
-  max-width: 1100px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 24px 16px 48px;
+  width: 100%;
 }
 
 .app-header {
@@ -89,6 +95,7 @@ body {
 .signal-status-main {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -138,11 +145,31 @@ body {
   overflow: hidden;
   aspect-ratio: 16 / 10;
   max-height: 640px;
+  touch-action: none;
 }
 .city-canvas-wrap canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Pantallas grandes: aprovechar el espacio extra sin que la escena quede enana. */
+@media (min-width: 900px) {
+  .city-canvas-wrap {
+    max-height: 720px;
+  }
+}
+
+/* Celular en horizontal: la altura de la ventana manda, no el ancho. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .city-canvas-wrap {
+    aspect-ratio: 16 / 6;
+    max-height: 300px;
+  }
+  .app {
+    padding-top: 12px;
+    padding-bottom: 24px;
+  }
 }
 
 .canvas-hint {
@@ -235,5 +262,20 @@ body {
   }
   .app-header h1 {
     font-size: 1.3rem;
+  }
+  .signal-status {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+  .metric-values {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .view-toggle button {
+    flex: 1 1 auto;
+    padding: 8px 10px;
+    font-size: 0.78rem;
   }
 }
