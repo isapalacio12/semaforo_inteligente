@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const path = require("path");
+const fs = require("fs");
 const { Server } = require("socket.io");
 
 const config = require("./config");
@@ -72,6 +74,20 @@ app.get("/api/state", (_req, res) => {
 app.get("/api/history", (_req, res) => {
   res.json(readHistory());
 });
+
+// --- Frontend compilado (produccion) ---
+// El Dockerfile copia el build de Vite (frontend/dist) a esta carpeta "public"
+// para que un solo proceso/puerto sirva tanto la API/WebSocket como el sitio.
+// En desarrollo esta carpeta no existe (se usa "npm run dev" en /frontend en su
+// lugar), asi que todo esto queda inactivo sin romper nada.
+const PUBLIC_DIR = path.join(__dirname, "..", "public");
+if (fs.existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+  });
+}
 
 io.on("connection", (socket) => {
   // Al conectarse, mandamos el estado actual de una vez para no esperar el siguiente tick.
