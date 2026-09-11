@@ -40,6 +40,14 @@ module.exports = {
   // El resto de la fila solo se reporta como numero (queueLength) para no saturar la animacion.
   MAX_VISIBLE_VEHICLES_PER_LANE: 12,
 
+  // Tope de seguridad: si una fila llega a este tamano (un escenario de trancon
+  // extremo y sostenido), se dejan de contar nuevos vehiculos hasta que baje.
+  // Sin este limite, una corrida de dias/semanas en produccion podria hacer que
+  // la fila crezca sin limite y el proceso consuma cada vez mas memoria/CPU.
+  MAX_QUEUE_LENGTH_PER_LANE: 300,
+  // Mismo tope de seguridad, pero para peatones esperando a cruzar.
+  MAX_PEDESTRIANS_WAITING_PER_GROUP: 200,
+
   // --- Motos ---
   // Fraccion de los vehiculos que llegan que son motos en vez de carros.
   MOTO_SHARE: 0.25,

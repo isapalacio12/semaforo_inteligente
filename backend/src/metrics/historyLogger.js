@@ -17,6 +17,12 @@ function appendSnapshot(snapshot) {
     history.splice(0, history.length - MAX_SNAPSHOTS);
   }
 
+  // La carpeta "data" no se sube a git (solo el .json generado esta en
+  // .gitignore, la carpeta en si no queda registrada si nunca tuvo otro
+  // archivo). Sin este mkdir, en un contenedor recien clonado esta carpeta
+  // no existe y writeFileSync tira ENOENT -cada 10 segundos-, tumbando el
+  // proceso entero una y otra vez.
+  fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
 }
 

@@ -115,15 +115,21 @@ class Intersection {
   _processVehicleArrivals(vehicleArrivals) {
     for (const lane of Object.keys(this.lanes)) {
       const { cars = 0, motos = 0 } = vehicleArrivals[lane] || {};
+      let added = 0;
       for (let i = 0; i < cars; i += 1) {
+        if (this.lanes[lane].queue.length >= config.MAX_QUEUE_LENGTH_PER_LANE) break;
         this.lanes[lane].queue.push({ id: this.nextVehicleId++, type: "car" });
+        added += 1;
       }
       for (let i = 0; i < motos; i += 1) {
+        if (this.lanes[lane].queue.length >= config.MAX_QUEUE_LENGTH_PER_LANE) break;
         this.lanes[lane].queue.push({ id: this.nextVehicleId++, type: "moto" });
+        added += 1;
       }
-      const n = cars + motos;
-      this.lanes[lane].arrived += n;
-      this.metrics.totalArrived += n;
+      // Los que no cupieron (fila ya en el tope de seguridad) se descartan: en una
+      // congestion tan extrema, en la vida real esos vehiculos tomarian otra ruta.
+      this.lanes[lane].arrived += added;
+      this.metrics.totalArrived += added;
     }
   }
 
@@ -152,8 +158,11 @@ class Intersection {
     for (const group of Object.keys(this.pedestrians)) {
       const state = this.pedestrians[group];
 
-      // 1. Llegadas de nuevos peatones a esperar.
-      state.waiting += (pedestrianArrivals && pedestrianArrivals[group]) || 0;
+      // 1. Llegadas de nuevos peatones a esperar (con tope de seguridad, ver config).
+      state.waiting = Math.min(
+        config.MAX_PEDESTRIANS_WAITING_PER_GROUP,
+        state.waiting + ((pedestrianArrivals && pedestrianArrivals[group]) || 0)
+      );
 
       // 2. Si este grupo tiene "camine", algunos de los que esperan arrancan a cruzar.
       if (group === walkingGroup && state.waiting > 0) {

@@ -16,7 +16,25 @@ app.use(cors());
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" },
+  // Un poco mas tolerante que el default: detras de un reverse proxy (Traefik/
+  // EasyPanel) un ping/pong puede tardar un poco mas en ir y volver, y no
+  // queremos que eso se confunda con una desconexion real.
+  pingInterval: 25000,
+  pingTimeout: 30000,
+});
+
+// Si algo inesperado revienta fuera del try/catch de runTick (o en cualquier
+// otro lado), lo dejamos registrado en los logs en vez de dejar que el
+// proceso se caiga: un crash aqui reinicia todo el contenedor y con eso se
+// pierde la simulacion completa (el semaforo "se descoordina" de la nada).
+process.on("uncaughtException", (err) => {
+  console.error("uncaughtException:", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("unhandledRejection:", err);
+});
 
 // Dos intersecciones simuladas en paralelo, alimentadas con las MISMAS
 // llegadas de vehiculos en cada tick, para que la comparacion sea justa:
@@ -28,35 +46,42 @@ const fixedIntersection = new Intersection("fixed");
 let tickCount = 0;
 
 function runTick() {
-  const arrivals = generateArrivals();
-  const pedestrianArrivals = generatePedestrianArrivals();
+  // Si un solo tick falla por lo que sea, lo registramos y seguimos con el
+  // siguiente en vez de tumbar el proceso entero (que reiniciaria el
+  // contenedor y resetearia toda la simulacion en curso).
+  try {
+    const arrivals = generateArrivals();
+    const pedestrianArrivals = generatePedestrianArrivals();
 
-  adaptiveIntersection.tick(arrivals, pedestrianArrivals);
-  fixedIntersection.tick(arrivals, pedestrianArrivals);
+    adaptiveIntersection.tick(arrivals, pedestrianArrivals);
+    fixedIntersection.tick(arrivals, pedestrianArrivals);
 
-  tickCount += 1;
+    tickCount += 1;
 
-  const state = {
-    tick: tickCount,
-    config: {
-      minGreen: config.MIN_GREEN_SECONDS,
-      maxGreen: config.MAX_GREEN_SECONDS,
-      yellow: config.YELLOW_SECONDS,
-      fixedGreen: config.FIXED_GREEN_SECONDS,
-    },
-    adaptive: adaptiveIntersection.toJSON(),
-    fixed: fixedIntersection.toJSON(),
-  };
-
-  io.emit("state", state);
-
-  // Cada 10 segundos simulados, guardamos un snapshot para el historial (fase 2).
-  if (tickCount % 10 === 0) {
-    appendSnapshot({
+    const state = {
       tick: tickCount,
-      adaptive: state.adaptive.metrics,
-      fixed: state.fixed.metrics,
-    });
+      config: {
+        minGreen: config.MIN_GREEN_SECONDS,
+        maxGreen: config.MAX_GREEN_SECONDS,
+        yellow: config.YELLOW_SECONDS,
+        fixedGreen: config.FIXED_GREEN_SECONDS,
+      },
+      adaptive: adaptiveIntersection.toJSON(),
+      fixed: fixedIntersection.toJSON(),
+    };
+
+    io.emit("state", state);
+
+    // Cada 10 segundos simulados, guardamos un snapshot para el historial (fase 2).
+    if (tickCount % 10 === 0) {
+      appendSnapshot({
+        tick: tickCount,
+        adaptive: state.adaptive.metrics,
+        fixed: state.fixed.metrics,
+      });
+    }
+  } catch (err) {
+    console.error("Error en runTick:", err);
   }
 }
 
