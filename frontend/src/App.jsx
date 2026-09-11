@@ -3,6 +3,7 @@ import { socket } from "./socket.js";
 import CityScene from "./three/CityScene.jsx";
 import MetricsPanel from "./components/MetricsPanel.jsx";
 import SignalStatus from "./components/SignalStatus.jsx";
+import SoundToggle from "./components/SoundToggle.jsx";
 
 export default function App() {
   const [state, setState] = useState(null);
@@ -55,6 +56,7 @@ export default function App() {
             <button type="button" className={view === "fixed" ? "active" : ""} onClick={() => setView("fixed")}>
               Ciudad: Tiempo fijo
             </button>
+            <SoundToggle intersection={view === "adaptive" ? state.adaptive : state.fixed} />
           </div>
 
           <SignalStatus intersection={view === "adaptive" ? state.adaptive : state.fixed} />
