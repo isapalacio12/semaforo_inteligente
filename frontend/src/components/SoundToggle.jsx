@@ -1,23 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { playSignalChime, setMuted, startCityAmbience } from "../audio/cityAmbience.js";
+import { useRef, useState } from "react";
+import { setMuted, startCityAmbience } from "../audio/cityAmbience.js";
 
-/**
- * Boton de sonido + puente entre el estado de la simulacion y el motor de
- * audio: suena un tono cuando el semaforo cambia de eje activo.
- */
-export default function SoundToggle({ intersection }) {
+/** Boton que activa/silencia el sonido de ciudad (la grabacion real, sin nada mas). */
+export default function SoundToggle() {
   const [enabled, setEnabled] = useState(false);
   const startedRef = useRef(false);
-  const prevAxisRef = useRef(null);
-
-  useEffect(() => {
-    if (!intersection) return;
-
-    if (prevAxisRef.current !== null && prevAxisRef.current !== intersection.activeAxis) {
-      playSignalChime();
-    }
-    prevAxisRef.current = intersection.activeAxis;
-  }, [intersection]);
 
   const toggle = () => {
     if (!startedRef.current) {

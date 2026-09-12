@@ -56,7 +56,7 @@ export default function App() {
             <button type="button" className={view === "fixed" ? "active" : ""} onClick={() => setView("fixed")}>
               Ciudad: Tiempo fijo
             </button>
-            <SoundToggle intersection={view === "adaptive" ? state.adaptive : state.fixed} />
+            <SoundToggle />
           </div>
 
           <SignalStatus intersection={view === "adaptive" ? state.adaptive : state.fixed} />

@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import RoadNetwork from "./RoadNetwork.jsx";
@@ -8,19 +7,11 @@ import Vehicle3D from "./Vehicle3D.jsx";
 import { CrossingPedestrian, WaitingPedestrian } from "./Pedestrian3D.jsx";
 import { useVehicleFleet } from "./useVehicleFleet.js";
 import { LANES } from "./laneLayout.js";
-import { playCarAccelerate, playMotoAccelerate } from "../audio/cityAmbience.js";
 
 const MAX_WAITING_PEDESTRIANS_SHOWN = 6;
 
 function LaneVehicles({ lane, data }) {
-  // Sonido de motor real: se dispara justo cuando un vehiculo arranca a
-  // cruzar el semaforo (deja de venir en la fila que manda el backend).
-  const handleDepart = useCallback((type) => {
-    if (type === "moto") playMotoAccelerate();
-    else playCarAccelerate();
-  }, []);
-
-  const fleet = useVehicleFleet(data.queue, handleDepart);
+  const fleet = useVehicleFleet(data.queue);
   return (
     <>
       {fleet.map((v) => (
