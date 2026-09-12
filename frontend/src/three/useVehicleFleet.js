@@ -15,22 +15,39 @@ const EXIT_DURATION_MS = (VEHICLE_MAX_EXIT_TRAVEL / VEHICLE_DRIVE_SPEED) * 1000 
  * que se esfumen de golpe justo en la linea de pare. Se podan de la lista en
  * la primera reconciliacion (llega un tick del backend por segundo) despues
  * de que ese tiempo se cumple.
+ *
+ * `onDepart(type)`, si se pasa, se llama una vez por cada vehiculo que recien
+ * arranca a cruzar (para disparar el sonido de motor acelerando). Se calcula
+ * fuera del updater de setEntries a proposito: los updaters de React deben
+ * ser puros (sin efectos secundarios como reproducir audio).
  */
-export function useVehicleFleet(queue) {
+export function useVehicleFleet(queue, onDepart) {
   const [entries, setEntries] = useState(() => queue.map((v, index) => ({ ...v, index, exiting: false })));
   const prevIdsRef = useRef(queue.map((v) => v.id));
+  const typeByIdRef = useRef(new Map(queue.map((v) => [v.id, v.type])));
 
   useEffect(() => {
     const newIds = queue.map((v) => v.id);
     const newIdSet = new Set(newIds);
     const now = Date.now();
 
+    queue.forEach((v) => typeByIdRef.current.set(v.id, v.type));
+
+    const departedIds = prevIdsRef.current.filter((id) => !newIdSet.has(id));
+
+    if (onDepart) {
+      departedIds.forEach((id) => {
+        onDepart(typeByIdRef.current.get(id));
+        typeByIdRef.current.delete(id);
+      });
+    }
+
     setEntries((current) => {
       const byId = new Map(current.map((e) => [e.id, e]));
 
-      prevIdsRef.current.forEach((id) => {
+      departedIds.forEach((id) => {
         const existing = byId.get(id);
-        if (existing && !newIdSet.has(id) && !existing.exiting) {
+        if (existing && !existing.exiting) {
           byId.set(id, { ...existing, exiting: true, exitStartedAt: now });
         }
       });
@@ -45,7 +62,7 @@ export function useVehicleFleet(queue) {
     });
 
     prevIdsRef.current = newIds;
-  }, [queue]);
+  }, [queue, onDepart]);
 
   return entries;
 }
