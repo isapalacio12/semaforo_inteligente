@@ -1,9 +1,12 @@
-// Motor de sonido ambiente de la ciudad, sintetizado con Web Audio API (sin
-// archivos de audio externos: nada que descargar, licenciar ni alojar).
+// Motor de sonido ambiente de la ciudad.
 //
-// - Un "ruido marron" filtrado en graves simula el murmullo de trafico lejano.
-// - Ese mismo ruido, filtrado en las frecuencias de la voz humana, simula
-//   gente conversando a lo lejos (una "cama" de murmullo, no palabras).
+// - La cama principal es una grabacion real de ambiente de ciudad
+//   (public/sounds/city-ambience.mp3), en loop. Si por algun motivo no
+//   carga (404, sin conexion, etc.), cae de respaldo a un "ruido marron"
+//   filtrado en graves sintetizado con Web Audio API.
+// - Un ruido filtrado en las frecuencias de la voz humana simula gente
+//   conversando a lo lejos (una "cama" de murmullo, no palabras) -esto
+//   siempre es sintetizado, no viene del archivo-.
 // - Bocinazos aleatorios, mas frecuentes mientras mas congestionada esta la
 //   via que se esta viendo (asi el oido tambien nota la diferencia entre el
 //   semaforo adaptativo y el de tiempo fijo).
@@ -14,11 +17,14 @@
 // Los navegadores bloquean el audio hasta que hay una interaccion real del
 // usuario (por eso todo arranca desde el boton de sonido, nunca solo).
 
+const CITY_AMBIENCE_URL = "/sounds/city-ambience.mp3";
+
 let ctx = null;
 let masterGain = null;
 let started = false;
 let honkTimer = null;
 let congestionLevel = 0; // 0..1
+let cityBufferPromise = null;
 
 function ensureContext() {
   if (!ctx) {
@@ -46,12 +52,50 @@ function createBrownNoiseBuffer(context, seconds) {
   return buffer;
 }
 
-export function startCityAmbience() {
+export async function startCityAmbience() {
+  // OJO: resume() debe llamarse de forma sincronica dentro del gesto del
+  // usuario (el clic en el boton) para que el navegador permita el audio.
+  // Lo que puede esperar (cargar y decodificar el mp3) va despues.
   const context = ensureContext();
   if (context.state === "suspended") context.resume();
   if (started) return;
   started = true;
 
+  startCrowdMurmur(context);
+  scheduleHonks();
+
+  try {
+    const buffer = await loadCityAmbienceBuffer(context);
+    const citySource = context.createBufferSource();
+    citySource.buffer = buffer;
+    citySource.loop = true;
+
+    const cityGain = context.createGain();
+    cityGain.gain.value = 0.4;
+
+    citySource.connect(cityGain).connect(masterGain);
+    citySource.start();
+  } catch (err) {
+    console.warn("No se pudo cargar el sonido de ciudad real, usando el sintetizado:", err);
+    startSyntheticTrafficHum(context);
+  }
+}
+
+function loadCityAmbienceBuffer(context) {
+  if (!cityBufferPromise) {
+    cityBufferPromise = fetch(CITY_AMBIENCE_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error(`No se encontro ${CITY_AMBIENCE_URL} (${res.status})`);
+        return res.arrayBuffer();
+      })
+      .then((data) => context.decodeAudioData(data));
+  }
+  return cityBufferPromise;
+}
+
+// Respaldo si el archivo real de ambiente no se pudo cargar: el murmullo de
+// trafico sintetizado que se uso antes de tener una grabacion real.
+function startSyntheticTrafficHum(context) {
   const noiseSource = context.createBufferSource();
   noiseSource.buffer = createBrownNoiseBuffer(context, 4);
   noiseSource.loop = true;
@@ -69,9 +113,6 @@ export function startCityAmbience() {
 
   noiseSource.connect(highpass).connect(lowpass).connect(ambienceGain).connect(masterGain);
   noiseSource.start();
-
-  startCrowdMurmur(context);
-  scheduleHonks();
 }
 
 // Murmullo de gente: el mismo tipo de ruido de fondo, pero pasado por dos
