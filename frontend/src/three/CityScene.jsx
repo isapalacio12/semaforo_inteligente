@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import RoadNetwork from "./RoadNetwork.jsx";
 import Buildings from "./Buildings.jsx";
+import Parks from "./Parks.jsx";
 import TrafficPole from "./TrafficPole.jsx";
 import Vehicle3D from "./Vehicle3D.jsx";
 import { CrossingPedestrian, WaitingPedestrian } from "./Pedestrian3D.jsx";
@@ -68,6 +69,7 @@ export default function CityScene({ intersection }) {
 
       <RoadNetwork />
       <Buildings />
+      <Parks />
 
       {LANES.map((lane) => (
         <TrafficPole key={lane} lane={lane} color={intersection.lanes[lane].color} />
