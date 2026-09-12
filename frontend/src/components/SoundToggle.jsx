@@ -1,14 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { playSignalChime, setCongestionLevel, setMuted, startCityAmbience } from "../audio/cityAmbience.js";
-
-// A partir de cuantos vehiculos en fila (sumando las 4 vias) se considera
-// "congestion maxima" para efectos de sonido (mas bocinazos).
-const CONGESTION_REFERENCE = 40;
+import { playSignalChime, setMuted, startCityAmbience } from "../audio/cityAmbience.js";
 
 /**
  * Boton de sonido + puente entre el estado de la simulacion y el motor de
- * audio: ajusta que tan seguido se oyen bocinazos segun la congestion actual,
- * y suena un tono cuando el semaforo cambia de eje activo.
+ * audio: suena un tono cuando el semaforo cambia de eje activo.
  */
 export default function SoundToggle({ intersection }) {
   const [enabled, setEnabled] = useState(false);
@@ -17,9 +12,6 @@ export default function SoundToggle({ intersection }) {
 
   useEffect(() => {
     if (!intersection) return;
-
-    const totalQueued = Object.values(intersection.lanes).reduce((sum, lane) => sum + lane.queueLength, 0);
-    setCongestionLevel(totalQueued / CONGESTION_REFERENCE);
 
     if (prevAxisRef.current !== null && prevAxisRef.current !== intersection.activeAxis) {
       playSignalChime();

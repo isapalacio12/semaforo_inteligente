@@ -1,15 +1,9 @@
 // Motor de sonido ambiente de la ciudad.
 //
-// - La cama principal es una grabacion real de ambiente de ciudad
-//   (public/sounds/city-ambience.mp3), en loop. Si por algun motivo no
-//   carga (404, sin conexion, etc.), cae de respaldo a un "ruido marron"
-//   filtrado en graves sintetizado con Web Audio API.
-// - Un ruido filtrado en las frecuencias de la voz humana simula gente
-//   conversando a lo lejos (una "cama" de murmullo, no palabras) -esto
-//   siempre es sintetizado, no viene del archivo-.
-// - Bocinazos aleatorios, mas frecuentes mientras mas congestionada esta la
-//   via que se esta viendo (asi el oido tambien nota la diferencia entre el
-//   semaforo adaptativo y el de tiempo fijo).
+// - La cama de fondo es la grabacion real de ambiente de ciudad que se nos
+//   dio (public/sounds/city-ambience.mp3), en loop. Si por algun motivo no
+//   carga (404, sin conexion, etc.), cae de respaldo a un ruido sintetizado
+//   -para nunca quedarse sin sonido de fondo-.
 // - Sonidos de motor acelerando, disparados por eventos REALES: cada vez que
 //   un carro o moto arranca a cruzar el semaforo en la escena 3D.
 // - Un tono suave cuando el semaforo cambia de eje.
@@ -22,8 +16,6 @@ const CITY_AMBIENCE_URL = "/sounds/city-ambience.mp3";
 let ctx = null;
 let masterGain = null;
 let started = false;
-let honkTimer = null;
-let congestionLevel = 0; // 0..1
 let cityBufferPromise = null;
 
 function ensureContext() {
@@ -37,21 +29,6 @@ function ensureContext() {
   return ctx;
 }
 
-// Ruido marron: ruido blanco integrado, suena mas grave/suave que el ruido
-// blanco puro -mucho mas parecido a un murmullo de trafico que a "estatica"-.
-function createBrownNoiseBuffer(context, seconds) {
-  const bufferSize = Math.floor(context.sampleRate * seconds);
-  const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
-  const data = buffer.getChannelData(0);
-  let lastOut = 0;
-  for (let i = 0; i < bufferSize; i += 1) {
-    const white = Math.random() * 2 - 1;
-    lastOut = (lastOut + 0.02 * white) / 1.02;
-    data[i] = lastOut * 3.5;
-  }
-  return buffer;
-}
-
 export async function startCityAmbience() {
   // OJO: resume() debe llamarse de forma sincronica dentro del gesto del
   // usuario (el clic en el boton) para que el navegador permita el audio.
@@ -61,9 +38,6 @@ export async function startCityAmbience() {
   if (started) return;
   started = true;
 
-  startCrowdMurmur(context);
-  scheduleHonks();
-
   try {
     const buffer = await loadCityAmbienceBuffer(context);
     const citySource = context.createBufferSource();
@@ -71,7 +45,7 @@ export async function startCityAmbience() {
     citySource.loop = true;
 
     const cityGain = context.createGain();
-    cityGain.gain.value = 0.4;
+    cityGain.gain.value = 0.5;
 
     citySource.connect(cityGain).connect(masterGain);
     citySource.start();
@@ -93,8 +67,21 @@ function loadCityAmbienceBuffer(context) {
   return cityBufferPromise;
 }
 
-// Respaldo si el archivo real de ambiente no se pudo cargar: el murmullo de
-// trafico sintetizado que se uso antes de tener una grabacion real.
+// Ruido marron (ruido blanco integrado, mas grave y suave): unico respaldo si
+// el archivo real de ambiente no se pudo cargar por algun motivo.
+function createBrownNoiseBuffer(context, seconds) {
+  const bufferSize = Math.floor(context.sampleRate * seconds);
+  const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  let lastOut = 0;
+  for (let i = 0; i < bufferSize; i += 1) {
+    const white = Math.random() * 2 - 1;
+    lastOut = (lastOut + 0.02 * white) / 1.02;
+    data[i] = lastOut * 3.5;
+  }
+  return buffer;
+}
+
 function startSyntheticTrafficHum(context) {
   const noiseSource = context.createBufferSource();
   noiseSource.buffer = createBrownNoiseBuffer(context, 4);
@@ -115,82 +102,10 @@ function startSyntheticTrafficHum(context) {
   noiseSource.start();
 }
 
-// Murmullo de gente: el mismo tipo de ruido de fondo, pero pasado por dos
-// filtros "de campana" centrados en frecuencias tipicas de la voz (no forma
-// palabras, es una cama de fondo, como se oiria una plaza desde lejos), con
-// un LFO lento que la hace subir y bajar de volumen -asi no suena plana-.
-function startCrowdMurmur(context) {
-  const source = context.createBufferSource();
-  source.buffer = createBrownNoiseBuffer(context, 5);
-  source.loop = true;
-
-  const voiceBandLow = context.createBiquadFilter();
-  voiceBandLow.type = "bandpass";
-  voiceBandLow.frequency.value = 450;
-  voiceBandLow.Q.value = 1.1;
-
-  const voiceBandHigh = context.createBiquadFilter();
-  voiceBandHigh.type = "bandpass";
-  voiceBandHigh.frequency.value = 1400;
-  voiceBandHigh.Q.value = 1.4;
-
-  const crowdGain = context.createGain();
-  crowdGain.gain.value = 0.05;
-
-  const lfo = context.createOscillator();
-  lfo.type = "sine";
-  lfo.frequency.value = 0.35;
-  const lfoGain = context.createGain();
-  lfoGain.gain.value = 0.02;
-  lfo.connect(lfoGain).connect(crowdGain.gain);
-  lfo.start();
-
-  source.connect(voiceBandLow).connect(crowdGain);
-  source.connect(voiceBandHigh).connect(crowdGain);
-  crowdGain.connect(masterGain);
-  source.start();
-}
-
 export function setMuted(muted) {
   if (masterGain) {
     masterGain.gain.value = muted ? 0 : 0.5;
   }
-}
-
-export function setCongestionLevel(level) {
-  congestionLevel = Math.max(0, Math.min(1, level));
-}
-
-function playHonk() {
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
-  gain.gain.linearRampToValueAtTime(0, now + 0.32);
-  gain.connect(masterGain);
-
-  [415, 500].forEach((freq) => {
-    const osc = ctx.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.value = freq;
-    osc.connect(gain);
-    osc.start(now);
-    osc.stop(now + 0.32);
-  });
-}
-
-function scheduleHonks() {
-  const nextDelayMs = () => 9000 - congestionLevel * 7000 + Math.random() * 4000;
-
-  const tick = () => {
-    if (started && Math.random() < 0.3 + congestionLevel * 0.5) {
-      playHonk();
-    }
-    honkTimer = setTimeout(tick, nextDelayMs());
-  };
-
-  honkTimer = setTimeout(tick, nextDelayMs());
 }
 
 // Para que no se amontonen muchos motores sonando encima si varios vehiculos
